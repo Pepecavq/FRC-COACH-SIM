@@ -72,7 +72,7 @@ public class Superstructure extends SubsystemBase {
 
 	@Override
 	public void periodic() {
-
+		LaunchCalculator.getInstance().clearLaunchingParameters();
 	}
 
 	public void updateTargetedBranch() {
@@ -136,7 +136,7 @@ public class Superstructure extends SubsystemBase {
 		LaunchCalculator.getInstance().clearLaunchingParameters();
 		var params = LaunchCalculator.getInstance().getParameters();
 
-		double flywheelRadsPerSec = params.flywheelSpeed();
+		double flywheelRadsPerSec = params.flywheelSpeed()*1.45;
 		double hoodAngleRads = params.hoodAngle();
 
 		RebuiltFuelOnFly fuelOnFly = new RebuiltFuelOnFly(
@@ -146,7 +146,7 @@ public class Superstructure extends SubsystemBase {
 								(Math.random() * 0.5) - 0.25,
 								(Math.random() * 0.5) - 0.25)),
 				Drive.mInstance.getFieldRelativeSpeeds(),
-				Drive.mInstance.getHeading().plus(Rotation2d.k180deg),
+				Drive.mInstance.getHeading(),
 				Meters.of(0.55),
 				MetersPerSecond.ofBaseUnits(flywheelRadsPerSec * 0.0325 * 1.17 * 1.05 * 0.75),
 				Radians.of(Math.PI / 2).minus(Radians.of(hoodAngleRads)));

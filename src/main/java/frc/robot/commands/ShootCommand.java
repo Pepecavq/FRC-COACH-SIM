@@ -34,6 +34,7 @@ public class ShootCommand extends Command {
 
 	@Override
 	public void end(boolean interrupted) {
+		DriveConstants.setSupplierDirection(null);
 		if (Robot.isSimulation()) {
 			Superstructure.mInstance.lastShootTime = 0;
 		}
