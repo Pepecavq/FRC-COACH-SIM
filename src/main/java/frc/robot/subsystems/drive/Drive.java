@@ -48,8 +48,12 @@ public class Drive extends SubsystemBase {
 		}));
 
 		if (!Robot.isReal()) {
-			drivetrain.resetPose((new Pose2d(new Translation2d(), Rotation2d.fromDegrees(90.0))));
+			drivetrain.resetPose((new Pose2d(new Translation2d(2,2), Rotation2d.fromDegrees(0.0))));
+		}else{
+			resetPose((new Pose2d(new Translation2d(2,2), Rotation2d.fromDegrees(0.0))));
 		}
+
+
 
 		drivetrain.getOdometryThread().setThreadPriority(31);
 	}
@@ -193,6 +197,9 @@ public class Drive extends SubsystemBase {
 	}
 
 	public Pose2d getPose() {
+		if (Robot.isSimulation() && GeneratedDrivetrain.mapleSimSwerveDrivetrain != null) {
+			return GeneratedDrivetrain.mapleSimSwerveDrivetrain.mapleSimDrive.getSimulatedDriveTrainPose();
+		}
 		return lastReadState.Pose;
 	}
 
@@ -221,6 +228,8 @@ public class Drive extends SubsystemBase {
 
 	public void resetPose(Pose2d pose) {
 		getGeneratedDrive().resetPose(pose);
+		if (GeneratedDrivetrain.mapleSimSwerveDrivetrain != null)
+        GeneratedDrivetrain.mapleSimSwerveDrivetrain.mapleSimDrive.setSimulationWorldPose(pose);
 		lastPoseResetTime =
 				Units.Seconds.of(Utils.getCurrentTimeSeconds()).plus(DriveConstants.updatePreventTimePostPoseReset);
 	}

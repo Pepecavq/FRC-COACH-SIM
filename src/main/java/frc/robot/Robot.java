@@ -42,6 +42,10 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.BiConsumer;
 
+import org.ironmaple.simulation.SimulatedArena;
+import org.ironmaple.simulation.seasonspecific.rebuilt2026.Arena2026Rebuilt;
+import org.littletonrobotics.frc2026.Mock.Logger;
+
 public class Robot extends TimedRobot {
 	private Command mAutonomousCommand;
 	private AutoModeSelector mAutoModeSelector;
@@ -56,6 +60,12 @@ public class Robot extends TimedRobot {
 	private long disabledLoopCount = 0;
 
 	public Robot() {
+		if (Robot.isSimulation()) {
+			SimulatedArena.overrideInstance(new Arena2026Rebuilt(true));
+			if(true){
+				SimulatedArena.getInstance().resetFieldForAuto();
+			}
+		}
 		RobotConstants.mAutoFactory = new AutoFactory(
 				Drive.mInstance::getPose,
 				Drive.mInstance.getGeneratedDrive()::resetPose,
@@ -137,6 +147,8 @@ public class Robot extends TimedRobot {
 		} catch (Exception e) {
 			SmartDashboard.putString("Logged Robot/Latest Error", e.getMessage());
 		}
+
+		Logger.recordOutput("FieldFuels", SimulatedArena.getInstance().getGamePiecesArrayByType("Fuel"));
 	}
 
 	@Override
