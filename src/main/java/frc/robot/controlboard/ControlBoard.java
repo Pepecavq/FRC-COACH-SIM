@@ -59,6 +59,9 @@ public class ControlBoard extends SubsystemBase {
 
 		// AUTO INTAKE FUEL (left trigger) #######################################################
 		driver.leftTrigger(0.1).whileTrue(new AutoIntakeFuelCommand());
+
+		// AUTO PASS TRENCH (A button) ###########################################################
+		driver.a().whileTrue(s.autoPassTrench());
 	}
 
 

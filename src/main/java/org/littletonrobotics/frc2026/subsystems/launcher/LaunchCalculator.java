@@ -170,9 +170,9 @@ public class LaunchCalculator {
     flywheelSpeedMap.put(3.51, 175.0);
     flywheelSpeedMap.put(3.93, 188.0);
     flywheelSpeedMap.put(4.40, 192.0);
-    flywheelSpeedMap.put(4.68, 195.0);
+    flywheelSpeedMap.put(4.58, 195.0);
+    flywheelSpeedMap.put(4.80, 195.0);
     flywheelSpeedMap.put(4.90, 195.0);
-    flywheelSpeedMap.put(5.01, 195.0);
 
     kickerSurfaceSpeedMap.put(0.0, 6.0);
     kickerSurfaceSpeedMap.put(3.0, 6.0);

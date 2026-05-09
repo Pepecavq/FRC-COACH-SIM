@@ -528,4 +528,10 @@ public class Util {
 	public static double calculatDistanceToRaiseElevator(double raisedAccel, double timeToRaise) {
 		return 0.5 * raisedAccel * timeToRaise * timeToRaise;
 	}
+
+	public static double getDistanceSq(Translation2d a, Translation2d b) {
+		double dx = a.getX() - b.getX();
+		double dy = a.getY() - b.getY();
+		return dx * dx + dy * dy;
+	}
 }

@@ -2,6 +2,7 @@ package frc.robot.autos;
 
 import choreo.auto.AutoFactory;
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.trajectory.Trajectory;
 import edu.wpi.first.units.Units;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -31,5 +32,23 @@ public class AutoHelpers {
 
 	public static Command resetPoseIfWithoutEstimate(Pose2d pose) {
 		return Commands.runOnce(() -> Drive.mInstance.resetPose(pose));
+	}
+
+	private static final Rotation2d[] SNAP_ANGLES_TRENCH = {
+			Rotation2d.fromDegrees(0),
+			Rotation2d.fromDegrees(180)
+	};
+
+	public static Rotation2d snapRotationTrench(Rotation2d rotation) {
+		Rotation2d bestAngle = SNAP_ANGLES_TRENCH[0];
+		double bestDiff = Math.abs(rotation.minus(SNAP_ANGLES_TRENCH[0]).getDegrees());
+		for (int i = 1; i < SNAP_ANGLES_TRENCH.length; i++) {
+			double diff = Math.abs(rotation.minus(SNAP_ANGLES_TRENCH[i]).getDegrees());
+			if (diff < bestDiff) {
+				bestDiff = diff;
+				bestAngle = SNAP_ANGLES_TRENCH[i];
+			}
+		}
+		return bestAngle;
 	}
 }

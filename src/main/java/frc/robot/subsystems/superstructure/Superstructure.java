@@ -1,5 +1,7 @@
 package frc.robot.subsystems.superstructure;
 
+import static edu.wpi.first.units.Units.Centimeters;
+import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.Meters;
 import static edu.wpi.first.units.Units.MetersPerSecond;
 import static edu.wpi.first.units.Units.Radians;
@@ -9,52 +11,39 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Transform2d;
 import edu.wpi.first.math.geometry.Translation2d;
-import edu.wpi.first.math.kinematics.ChassisSpeeds;
-import edu.wpi.first.units.BaseUnits;
 import edu.wpi.first.units.Units;
-import edu.wpi.first.units.measure.Angle;
-import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.util.sendable.SendableBuilder;
 import edu.wpi.first.wpilibj.RobotController;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.DeferredCommand;
-import edu.wpi.first.wpilibj2.command.Subsystem;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import edu.wpi.first.wpilibj2.command.WaitUntilCommand;
-import frc.lib.drive.FollowXLineSwerveRequestCommand;
+import frc.lib.drive.FollowYLineSwerveRequestCommand;
 import frc.lib.drive.PIDToPoseCommand;
-import frc.lib.io.BeamBreakIO;
-import frc.lib.io.BeamBreakIOSim;
-import frc.lib.io.MotorIO.Setpoint;
-import frc.lib.util.FieldLayout;
-import frc.lib.util.FieldLayout.Branch;
-import frc.lib.util.FieldLayout.Branch.Face;
-import frc.lib.util.FieldLayout.Level;
 import frc.lib.util.Util;
-import frc.robot.RobotConstants;
-import frc.robot.controlboard.ControlBoard;
 import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.drive.DriveConstants;
-import frc.robot.subsystems.elevator.Elevator;
-import frc.robot.subsystems.elevator.ElevatorConstants;
 import frc.robot.subsystems.intake.Intake;
-import frc.robot.subsystems.pivot.Pivot;
-import frc.robot.subsystems.pivot.PivotConstants;
-import frc.robot.subsystems.superstructure.SuperstructureConstants.BeamBreakConstants;
 import java.util.Set;
-import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 import org.ironmaple.simulation.SimulatedArena;
 import org.ironmaple.simulation.seasonspecific.rebuilt2026.RebuiltFuelOnFly;
 import org.littletonrobotics.frc2026.FieldConstants;
 import org.littletonrobotics.frc2026.subsystems.launcher.LaunchCalculator;
 import org.littletonrobotics.frc2026.subsystems.launcher.LauncherConstants;
+import org.littletonrobotics.frc2026.util.geometry.AllianceFlipUtil;
 import org.littletonrobotics.frc2026.util.geometry.GeomUtil;
 
 public class Superstructure extends SubsystemBase {
 	public static final Superstructure mInstance = new Superstructure();
+
+	private static final double TRENCH_BACKUP_DISTANCE = 0.4;
+
+	private static final Translation2d[] TRENCH_CENTERS = {
+			FieldConstants.RightTrench,
+			FieldConstants.LeftTrench,
+			AllianceFlipUtil.forceApply(FieldConstants.LeftTrench),
+			AllianceFlipUtil.forceApply(FieldConstants.RightTrench)
+	};
 
 	private boolean driveReady = false;
 	private boolean superstructureDone = false;
@@ -110,6 +99,77 @@ public class Superstructure extends SubsystemBase {
 
 	public void setPathFollowing(boolean isFollowing) {
 		isPathFollowing = isFollowing;
+	}
+
+	public Command autoPassTrench() {
+		return new DeferredCommand(
+				() -> {
+					Pose2d pose = Drive.mInstance.getPose();
+
+					// Find the closest trench center
+					Translation2d closestCenter = TRENCH_CENTERS[0];
+					double minDistanceSq = Util.getDistanceSq(pose.getTranslation(), closestCenter);
+					for (int i = 1; i < TRENCH_CENTERS.length; i++) {
+						double distanceSq = Util.getDistanceSq(pose.getTranslation(), TRENCH_CENTERS[i]);
+						if (distanceSq < minDistanceSq) {
+							minDistanceSq = distanceSq;
+							closestCenter = TRENCH_CENTERS[i];
+						}
+					}
+
+					double targetY = closestCenter.getY();
+					double x_c = closestCenter.getX();
+
+					double gateStartX = x_c - 1.2;
+					double gateEndX = x_c + 1.2;
+
+					double distToStart = Math.abs(pose.getX() - gateStartX);
+					double distToEnd = Math.abs(pose.getX() - gateEndX);
+					boolean reversed = distToEnd < distToStart;
+
+					double targetX;
+					double velocityX;
+
+					if (reversed) {
+						targetX = gateEndX;
+						velocityX = -5.0;
+					} else {
+						targetX = gateStartX;
+						velocityX = 5.0;
+					}
+
+					if (AllianceFlipUtil.shouldFlip()) {
+						velocityX = -velocityX;
+					}
+
+					Rotation2d targetRotation = frc.robot.autos.AutoHelpers.snapRotationTrench(pose.getRotation());
+					Command traversal = new FollowYLineSwerveRequestCommand(targetY, velocityX, targetRotation)
+							.withTimeout(1.0);
+
+					boolean insideX = pose.getX() > gateStartX && pose.getX() < gateEndX;
+					boolean outsideY = Math.abs(pose.getY() - targetY)
+							> FieldConstants.RightTrenchDimensions.openingWidth / 2.0;
+
+					if (insideX && outsideY) {
+						double backupX = reversed
+								? gateEndX + TRENCH_BACKUP_DISTANCE
+								: gateStartX - TRENCH_BACKUP_DISTANCE;
+						Pose2d backupPose = new Pose2d(backupX, targetY, targetRotation);
+						return new PIDToPoseCommand(backupPose, Centimeters.of(25.0), Degrees.of(15),
+								DriveConstants.mAutoAlignTranslationController,
+								DriveConstants.mAutoAlignHeadingController).andThen(traversal);
+					}
+
+					if (insideX) {
+						return traversal;
+					}
+
+					Pose2d approachPose = new Pose2d(targetX, targetY, targetRotation);
+					return new PIDToPoseCommand(approachPose, Centimeters.of(25.0), Degrees.of(15),
+							DriveConstants.mAutoAlignTranslationController,
+							DriveConstants.mAutoAlignHeadingController).andThen(traversal);
+				},
+				Set.of(Drive.mInstance));
 	}
 
 	public void SimCalcShoot() {
