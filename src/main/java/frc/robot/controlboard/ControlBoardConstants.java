@@ -1,6 +1,6 @@
 package frc.robot.controlboard;
 
-import edu.wpi.first.units.measure.Units;
+import edu.wpi.first.units.Units;
 import edu.wpi.first.units.measure.Time;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 

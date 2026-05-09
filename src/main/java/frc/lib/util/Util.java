@@ -12,12 +12,12 @@ import edu.wpi.first.math.interpolation.InverseInterpolator;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.trajectory.Trajectory;
 import edu.wpi.first.math.trajectory.Trajectory.State;
-import edu.wpi.first.units.measure.AngleUnit;
-import edu.wpi.first.units.measure.BaseUnits;
-import edu.wpi.first.units.measure.DistanceUnit;
+import edu.wpi.first.units.AngleUnit;
+import edu.wpi.first.units.BaseUnits;
+import edu.wpi.first.units.DistanceUnit;
 import edu.wpi.first.units.Measure;
-import edu.wpi.first.units.measure.Unit;
-import edu.wpi.first.units.measure.Units;
+import edu.wpi.first.units.Unit;
+import edu.wpi.first.units.Units;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.units.measure.Time;
@@ -28,6 +28,10 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.Subsystem;
 import frc.robot.RobotConstants;
 import frc.robot.subsystems.drive.Drive;
+import frc.robot.subsystems.shooter.Shooter;
+
+import static edu.wpi.first.units.Units.Inch;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -46,7 +50,8 @@ public class Util {
 	/**
 	 * Prevent this class from being instantiated.
 	 */
-	private Util() {}
+	private Util() {
+	}
 
 	/**
 	 * Limits the given input to the given magnitude.
@@ -126,6 +131,23 @@ public class Util {
 				&& epsilonEquals(a.vyMetersPerSecond, b.vyMetersPerSecond, linearVelocityEpsilon);
 	}
 
+	/**
+	 * efficient epsilonEquals for Rotation2d.
+	 * Uses the dot product to avoid expensive inverse trigonometry (atan2).
+	 * * @param a First rotation
+	 * 
+	 * @param b              Second rotation
+	 * @param epsilonRadians The maximum angle difference in radians
+	 * @return true if the difference is less than epsilon
+	 */
+	public static boolean epsilonEquals(Rotation2d a, Rotation2d b, Angle epsilonRadians) {
+		// A . B = |A||B|cos(theta). Since Rotation2d is normalized, |A|=|B|=1.
+		// Therefore, A . B = cos(theta).
+		// If |theta| < epsilon, then cos(theta) > cos(epsilon).
+		double dot = a.getCos() * b.getCos() + a.getSin() * b.getSin();
+		return dot > Math.cos(epsilonRadians.in(Units.Radians));
+	}
+
 	public static boolean allCloseTo(final List<Double> list, double value, double epsilon) {
 		boolean result = true;
 		for (Double value_in : list) {
@@ -167,7 +189,8 @@ public class Util {
 	}
 
 	/**
-	 * Class used store translate distances in the form of angles. Used for elevators to interface with the IO layer which only supports angles.
+	 * Class used store translate distances in the form of angles. Used for
+	 * elevators to interface with the IO layer which only supports angles.
 	 */
 	public static class DistanceAngleConverter {
 		private final Distance radius;
@@ -177,7 +200,8 @@ public class Util {
 		}
 
 		/**
-		 * Converts a distance measurement to an equal angle measurement based on radius initialized with.
+		 * Converts a distance measurement to an equal angle measurement based on radius
+		 * initialized with.
 		 *
 		 * @param distance Distance to convert to angle.
 		 * @return Angle distance is equivalent to.
@@ -187,7 +211,8 @@ public class Util {
 		}
 
 		/**
-		 * Converts an angle measurement to an equal distance measurement based on radius initialized with.
+		 * Converts an angle measurement to an equal distance measurement based on
+		 * radius initialized with.
 		 *
 		 * @param distance angle to convert to distance.
 		 * @return Distance agle is equivalent to.
@@ -197,7 +222,8 @@ public class Util {
 		}
 
 		/**
-		 * Gets an angle unit equivalent to a distance unit with the conversion of the radius initialized with.
+		 * Gets an angle unit equivalent to a distance unit with the conversion of the
+		 * radius initialized with.
 		 *
 		 * @param unit The distance unit to convert.
 		 * @return The distance represented as an AngleUnit
@@ -211,7 +237,8 @@ public class Util {
 		}
 
 		/**
-		 * Gets a distance unit equivalent to a angle unit with the conversion of the radius initialized with.
+		 * Gets a distance unit equivalent to a angle unit with the conversion of the
+		 * radius initialized with.
 		 *
 		 * @param unit The angle unit to convert.
 		 * @return The distance represented as a DistanceUnit
@@ -229,7 +256,7 @@ public class Util {
 		}
 	}
 
-	public static class MeasureInterpolable<T extends U, U extends Unit> implements Interpolator<T> {
+	public static class MeasureInterpolable<T extends Measure<U>, U extends Unit> implements Interpolator<T> {
 		@Override
 		@SuppressWarnings("unchecked")
 		public T interpolate(T startValue, T endValue, double t) {
@@ -237,7 +264,7 @@ public class Util {
 		}
 	}
 
-	public static class MeasureInverseInterpolable<T extends U, U extends Unit>
+	public static class MeasureInverseInterpolable<T extends Measure<U>, U extends Unit>
 			implements InverseInterpolator<T> {
 		@Override
 		public double inverseInterpolate(T startValue, T endValue, T q) {
@@ -246,8 +273,7 @@ public class Util {
 		}
 	}
 
-	public static class InterpolatingMeasureMap<
-					J extends U, U extends Unit, K extends Q, Q extends Unit>
+	public static class InterpolatingMeasureMap<J extends Measure<U>, U extends Unit, K extends Measure<Q>, Q extends Unit>
 			extends InterpolatingTreeMap<J, K> {
 		public InterpolatingMeasureMap() {
 			super(new MeasureInverseInterpolable<J, U>(), new MeasureInterpolable<K, Q>());
@@ -260,7 +286,8 @@ public class Util {
 	}
 
 	/**
-	 * The inverse of this transform "undoes" the effect of translating by this transform.
+	 * The inverse of this transform "undoes" the effect of translating by this
+	 * transform.
 	 *
 	 * @return The opposite of this transform.
 	 */
@@ -307,8 +334,8 @@ public class Util {
 				}
 				prevState = poseList.get(i);
 				nextState = poseList.get(i + 2);
-				if (prevState.getFirst().getTranslation().getDistance(pose.getTranslation())
-						< nextState.getFirst().getTranslation().getDistance(pose.getTranslation())) {
+				if (prevState.getFirst().getTranslation().getDistance(pose.getTranslation()) < nextState.getFirst()
+						.getTranslation().getDistance(pose.getTranslation())) {
 					nextState = poseList.get(i + 1);
 					break;
 				}
@@ -317,10 +344,10 @@ public class Util {
 			double distanceToPrevPose = prevState.getFirst().getTranslation().getDistance(pose.getTranslation());
 			double distanceToNextPose = nextState.getFirst().getTranslation().getDistance(pose.getTranslation());
 			double percentToNextPose = (prevState
-									.getFirst()
-									.getTranslation()
-									.getDistance(nextState.getFirst().getTranslation())
-							- distanceToNextPose)
+					.getFirst()
+					.getTranslation()
+					.getDistance(nextState.getFirst().getTranslation())
+					- distanceToNextPose)
 					/ (distanceToPrevPose + distanceToNextPose);
 
 			Time timeDelta = nextState.getSecond().minus(prevState.getSecond());
@@ -348,10 +375,11 @@ public class Util {
 			}
 
 			Time timeDelta = nextState.getSecond().plus(prevState.getSecond());
-			double percentIntoDelta =
-					time.minus(prevState.getSecond()).in(BaseUnits.TimeUnit) / (timeDelta.in(BaseUnits.TimeUnit));
-			Transform2d prevToTimePose =
-					nextState.getFirst().minus(prevState.getFirst()).times(percentIntoDelta);
+			double percentIntoDelta = time.minus(prevState.getSecond()).in(BaseUnits.TimeUnit)
+					/ (timeDelta.in(BaseUnits.TimeUnit));
+			// SmartDashboard.putNumber("Auto Align Traj/Percent As Delta",
+			// percentIntoDelta);
+			Transform2d prevToTimePose = nextState.getFirst().minus(prevState.getFirst()).times(percentIntoDelta);
 			return prevState.getFirst().plus(prevToTimePose);
 		}
 
@@ -362,9 +390,9 @@ public class Util {
 		}
 
 		public Pose2dTimeInterpolable(Trajectory trajwithTan, Rotation2d startHeading, Rotation2d endHeading) {
-			double totalTimeSecpnods = trajwithTan.getTotalTimeSeconds();
+			double totalTimeSeconds = trajwithTan.getTotalTimeSeconds();
 			for (State state : trajwithTan.getStates()) {
-				Rotation2d poseRotation = startHeading.interpolate(endHeading, state.timeSeconds / totalTimeSecpnods);
+				Rotation2d poseRotation = startHeading.interpolate(endHeading, state.timeSeconds / totalTimeSeconds);
 				poseList.add(new Pair<>(
 						new Pose2d(state.poseMeters.getTranslation(), poseRotation),
 						Units.Seconds.of(state.timeSeconds)));
@@ -380,7 +408,8 @@ public class Util {
 	 * @param radius1 Radius of the first circle
 	 * @param center2 Center point of the second circle
 	 * @param radius2 Radius of the second circle
-	 * @return An ArrayList containing all intersection points of the circle. ArrayList may have 0, 1, or 2 values.
+	 * @return An ArrayList containing all intersection points of the circle.
+	 *         ArrayList may have 0, 1, or 2 values.
 	 */
 	public static ArrayList<Translation2d> getCircleIntersectionPoints(
 			Translation2d center1, double radius1, Translation2d center2, double radius2) {
@@ -390,7 +419,7 @@ public class Util {
 		double distance = center2.getDistance(center1);
 
 		if (distance > (Math.abs(radius1) + Math.abs(radius2))) {
-			return allPoints; // circles do not intersect
+			return allPoints; // Circles do not intersect
 		}
 
 		double a = (radius1 * radius1 - radius2 * radius2 + distance * distance) / (2 * distance);
@@ -398,14 +427,12 @@ public class Util {
 
 		Translation2d point0 = center1.plus((delta.times(a).div(distance)));
 
-		Translation2d solution1 =
-				point0.plus(new Translation2d(delta.getY(), delta.unaryMinus().getX())
-						.times(h)
-						.div(distance));
-		Translation2d solution2 =
-				point0.plus(new Translation2d(delta.unaryMinus().getY(), delta.getX())
-						.times(h)
-						.div(distance));
+		Translation2d solution1 = point0.plus(new Translation2d(delta.getY(), delta.unaryMinus().getX())
+				.times(h)
+				.div(distance));
+		Translation2d solution2 = point0.plus(new Translation2d(delta.unaryMinus().getY(), delta.getX())
+				.times(h)
+				.div(distance));
 
 		allPoints.add(solution1);
 
@@ -462,11 +489,11 @@ public class Util {
 				.minus(drivePose.getRotation());
 	}
 
-	public static <M extends U, U extends Unit> M min(M x, M y) {
+	public static <M extends Measure<U>, U extends Unit> M min(M x, M y) {
 		return x.lt(y) ? x : y;
 	}
 
-	public static <M extends U, U extends Unit> M max(M x, M y) {
+	public static <M extends Measure<U>, U extends Unit> M max(M x, M y) {
 		return x.gt(y) ? x : y;
 	}
 

@@ -7,19 +7,27 @@ import com.ctre.phoenix6.controls.ControlRequest;
 import com.ctre.phoenix6.controls.DutyCycleOut;
 import com.ctre.phoenix6.controls.Follower;
 import com.ctre.phoenix6.controls.MotionMagicExpoVoltage;
+import com.ctre.phoenix6.controls.MotionMagicTorqueCurrentFOC;
 import com.ctre.phoenix6.controls.NeutralOut;
 import com.ctre.phoenix6.controls.PositionTorqueCurrentFOC;
+import com.ctre.phoenix6.controls.PositionVoltage;
+import com.ctre.phoenix6.controls.VelocityDutyCycle;
 import com.ctre.phoenix6.controls.VelocityTorqueCurrentFOC;
+import com.ctre.phoenix6.controls.VelocityVoltage;
 import com.ctre.phoenix6.controls.VoltageOut;
 import com.ctre.phoenix6.hardware.TalonFX;
+import com.ctre.phoenix6.signals.MotorAlignmentValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
-import edu.wpi.first.units.measure.AngleUnit;
-import edu.wpi.first.units.measure.TimeUnit;
-import edu.wpi.first.units.measure.Units;
+import edu.wpi.first.math.filter.Debouncer;
+import edu.wpi.first.units.AngleUnit;
+import edu.wpi.first.units.TimeUnit;
+
+import edu.wpi.first.units.Units;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Dimensionless;
 import edu.wpi.first.units.measure.Voltage;
+import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import java.util.concurrent.BlockingQueue;
@@ -40,6 +48,11 @@ public class MotorIOTalonFX extends MotorIO {
 	private ThreadPoolExecutor threadPoolExecutor =
 			new ThreadPoolExecutor(1, 1, 5, java.util.concurrent.TimeUnit.MILLISECONDS, queue);
 
+	private final Alert mainDisconnectedAlert;
+	private final Debouncer mainConnectedDebouncer;
+	private final Alert[] followerDisconnectedAlerts;
+	private final Debouncer[] followerConnectedDebouncers;
+
 	public void applyConfig(TalonFX fx, TalonFXConfiguration config) {
 		threadPoolExecutor.submit(() -> {
 			for (int i = 0; i < 5; i++) {
@@ -57,6 +70,15 @@ public class MotorIOTalonFX extends MotorIO {
 
 		for (int i = 0; i < followers.length; i++) {
 			updateMotorInputs(followerInputs[i], followers[i]);
+		}
+
+		updateAlerts();
+	}
+
+	private void updateAlerts() {
+		mainDisconnectedAlert.set(!mainConnectedDebouncer.calculate(isMainConnected()));
+		for (int i = 0; i < followers.length; i++) {
+			followerDisconnectedAlerts[i].set(!followerConnectedDebouncers[i].calculate(isFollowerConnected(i)));
 		}
 	}
 
@@ -112,6 +134,14 @@ public class MotorIOTalonFX extends MotorIO {
 	@Override
 	protected void setPositionSetpoint(Angle mechanismPosition) {
 		setControl(requestGetter.getPositionRequest(mechanismPosition));
+	}
+
+	public boolean isMainConnected() {
+		return main.getPosition().getStatus().isOK();
+	}
+
+	public boolean isFollowerConnected(int index) {
+		return followers[index].getPosition().getStatus().isOK();
 	}
 
 	@Override
@@ -211,7 +241,17 @@ public class MotorIOTalonFX extends MotorIO {
 			followers[i].setControl(new Follower(config.mainID, config.followerOpposeMain[i]));
 		}
 
-		setFollowerConfig(followerConfig);
+		setFollowerConfig(config.followerConfig);
+
+		mainDisconnectedAlert = new Alert(config.mainName + " disconnected!", Alert.AlertType.kError);
+		mainConnectedDebouncer = new Debouncer(0.5, Debouncer.DebounceType.kFalling);
+
+		followerDisconnectedAlerts = new Alert[followers.length];
+		followerConnectedDebouncers = new Debouncer[followers.length];
+		for (int i = 0; i < followers.length; i++) {
+			followerDisconnectedAlerts[i] = new Alert(config.followerNames[i] + " disconnected!", Alert.AlertType.kError);
+			followerConnectedDebouncers[i] = new Debouncer(0.5, Debouncer.DebounceType.kFalling);
+		}
 	}
 
 	/**
@@ -222,17 +262,19 @@ public class MotorIOTalonFX extends MotorIO {
 		public TimeUnit time = Units.Seconds;
 		public int mainID = -1;
 		public String mainBus = "ASSIGN_BUS";
+		public String mainName = "UNNAMED_MOTOR";
 		public TalonFXConfiguration mainConfig = new TalonFXConfiguration();
 		public int[] followerIDs = new int[0];
 		public String[] followerBuses = new String[0];
+		public String[] followerNames = new String[0];
 		public TalonFXConfiguration followerConfig = new TalonFXConfiguration();
-		public boolean[] followerOpposeMain = new boolean[0];
+		public MotorAlignmentValue[] followerOpposeMain = new MotorAlignmentValue[0];
 		public ControlRequestGetter requestGetter = new ControlRequestGetter();
 	}
 
 	public static class ControlRequestGetter {
 		public ControlRequest getVoltageRequest(Voltage voltage) {
-			return new VoltageOut(voltage.in(Units.Volts)).withEnableFOC(false);
+			return new VoltageOut(voltage.in(Units.Volts)).withEnableFOC(true);
 		}
 
 		public ControlRequest getDutyCycleRequest(Dimensionless percent) {
@@ -244,11 +286,12 @@ public class MotorIOTalonFX extends MotorIO {
 		}
 
 		public ControlRequest getVelocityRequest(AngularVelocity mechanismVelocity) {
-			return new VelocityTorqueCurrentFOC(mechanismVelocity).withSlot(1);
+			return new VelocityVoltage(mechanismVelocity).withSlot(1).withEnableFOC(true);//DADAOsadsdaaosidoashddoa
 		}
 
 		public ControlRequest getPositionRequest(Angle mechanismPosition) {
 			return new PositionTorqueCurrentFOC(mechanismPosition).withSlot(2);
+			
 		}
 	}
 }

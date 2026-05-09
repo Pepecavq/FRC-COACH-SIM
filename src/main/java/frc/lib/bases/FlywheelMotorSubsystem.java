@@ -1,6 +1,6 @@
 package frc.lib.bases;
 
-import edu.wpi.first.units.measure.BaseUnits;
+import edu.wpi.first.units.BaseUnits;
 import edu.wpi.first.units.measure.AngularVelocity;
 import frc.lib.io.MotorIO;
 import frc.lib.util.Util;
