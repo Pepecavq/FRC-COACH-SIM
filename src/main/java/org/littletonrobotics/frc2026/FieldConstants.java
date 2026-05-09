@@ -359,6 +359,11 @@ public class FieldConstants {
     public boolean containsAndEnabled(Pose2d pose) {
       return enabled && contains(pose);
     }
+
+    public double getMinX() { return minX; }
+    public double getMaxX() { return maxX; }
+    public double getMinY() { return minY; }
+    public double getMaxY() { return maxY; }
   }
 
   public static final Zone ALLIANCE_LEFT =

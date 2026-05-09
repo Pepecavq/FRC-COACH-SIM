@@ -35,6 +35,7 @@ import frc.robot.subsystems.detection.Detection;
 import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.intake.Intake;
 import frc.robot.subsystems.pivot.Pivot;
+import frc.robot.subsystems.coachai.CoachAIListener;
 import frc.robot.subsystems.superstructure.Superstructure;
 import frc.robot.subsystems.vision.Limelight;
 import java.util.HashMap;
@@ -111,7 +112,8 @@ public class Robot extends TimedRobot {
 			Intake.mInstance,
 			Limelight.mInstance,
 			Pivot.mInstance,
-			Superstructure.mInstance
+			Superstructure.mInstance,
+			CoachAIListener.mInstance
 		}) {
 			SmartDashboard.putData(s);
 		}
