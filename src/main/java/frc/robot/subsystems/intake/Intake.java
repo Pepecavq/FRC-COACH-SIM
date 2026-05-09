@@ -44,12 +44,13 @@ public class Intake extends ServoMotorSubsystem<MotorIOTalonFX> {
 
 		if (Robot.isSimulation()) {
 			intakeSimulation = IntakeSimulation.InTheFrameIntake(
-					"Algae",
+					"Fuel",
 					GeneratedDrivetrain.mapleSimSwerveDrivetrain.mapleSimDrive,
-					Inches.of(20),
+					Inches.of(22),
 					IntakeSimulation.IntakeSide.FRONT,
-					5);
+					50);
 		}
+		intakeSimulation.startIntake();
 	}
 
 	@Override
@@ -57,9 +58,9 @@ public class Intake extends ServoMotorSubsystem<MotorIOTalonFX> {
 		super.periodic();
 		if (Robot.isSimulation() && intakeSimulation != null) {
 			if (nearPosition(IntakeConstants.converter.toAngle(IntakeConstants.kDeployPosition))) {
-				intakeSimulation.startIntake();
+				//intakeSimulation.startIntake();
 			} else {
-				intakeSimulation.stopIntake();
+				//intakeSimulation.stopIntake();
 			}
 			SmartDashboard.putNumber("Sim/IntakeCount", intakeSimulation.getGamePiecesAmount());
 		}

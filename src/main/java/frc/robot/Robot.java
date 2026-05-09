@@ -145,7 +145,7 @@ public class Robot extends TimedRobot {
 					(commandSchedulerEnd - commandSchedulerStart) * 1000.0);
 			Threads.setCurrentThreadPriority(false, 0);
 		} catch (Exception e) {
-			SmartDashboard.putString("Logged Robot/Latest Error", e.getMessage());
+			SmartDashboard.putString("Logged Robot/Latest Error", e.getMessage() != null ? e.getMessage() : e.toString());
 		}
 
 		Logger.recordOutput("FieldFuels", SimulatedArena.getInstance().getGamePiecesArrayByType("Fuel"));

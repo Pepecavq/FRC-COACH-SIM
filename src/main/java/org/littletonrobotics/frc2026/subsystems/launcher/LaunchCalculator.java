@@ -24,11 +24,10 @@ import edu.wpi.first.wpilibj.DriverStation;
 import frc.robot.subsystems.drive.Drive;
 import lombok.Getter;
 import lombok.experimental.ExtensionMethod;
-import org.littletonrobotics.frc2026.Constants;
 import org.littletonrobotics.frc2026.FieldConstants;
 import org.littletonrobotics.frc2026.Mock.LoggedTunableNumber;
+import org.littletonrobotics.frc2026.Mock.Logger;
 import org.littletonrobotics.frc2026.Mock.RobotState;
-import org.littletonrobotics.frc2026.subsystems.launcher.hood.Hood;
 import org.littletonrobotics.frc2026.util.geometry.AllianceFlipUtil;
 import org.littletonrobotics.frc2026.util.geometry.Bounds;
 import org.littletonrobotics.frc2026.util.geometry.GeomUtil;
@@ -40,9 +39,9 @@ public class LaunchCalculator {
   @Getter private double flywheelSpeedOffsetRadsPerSec = 0.0;
 
   private final LinearFilter hoodAngleFilter =
-      LinearFilter.movingAverage((int) (0.1 / Constants.loopPeriodSecs));
+      LinearFilter.movingAverage((int) (0.1 / loopPeriodSecs));
   private final LinearFilter driveAngleFilter =
-      LinearFilter.movingAverage((int) (0.1 / Constants.loopPeriodSecs));
+      LinearFilter.movingAverage((int) (0.1 / loopPeriodSecs));
 
   private double lastHoodAngle;
   private Rotation2d lastDriveAngle;
@@ -104,6 +103,7 @@ public class LaunchCalculator {
   public static final LaunchPreset trenchPreset;
   public static final LaunchPreset outpostPreset;
   public static final LaunchPreset blearghhPreset;
+  /*
   public static final LaunchPreset hoodMinPreset =
       new LaunchPreset(
           new LoggedTunableNumber(
@@ -114,7 +114,7 @@ public class LaunchCalculator {
           new LoggedTunableNumber(
               "LaunchCalculator/Presets/HoodMax/HoodAngle", Units.radiansToDegrees(Hood.maxAngle)),
           new LoggedTunableNumber("LaunchCalculator/Presets/HoodMax/FlywheelSpeed", 50));
-
+ */
   public static final LoggedTunableNumber idleSpeed =
       new LoggedTunableNumber("LaunchCalculator/IdleSpeed", 80);
   public static final LoggedTunableNumber linearDragTimeConstant =
@@ -251,6 +251,8 @@ public class LaunchCalculator {
     return timeOfFlightMap.get(maxDistance);
   }
 
+  public static final double loopPeriodSecs = 0.02;
+
   public LaunchingParameters getParameters() {
     boolean passing =
         AllianceFlipUtil.applyX(Drive.mInstance.getPose().getX())
@@ -324,11 +326,11 @@ public class LaunchCalculator {
     if (lastDriveAngle == null) lastDriveAngle = driveAngle;
     if (Double.isNaN(lastHoodAngle)) lastHoodAngle = hoodAngle;
     double hoodVelocity =
-        hoodAngleFilter.calculate((hoodAngle - lastHoodAngle) / Constants.loopPeriodSecs);
+        hoodAngleFilter.calculate((hoodAngle - lastHoodAngle) / loopPeriodSecs);
     lastHoodAngle = hoodAngle;
     double driveVelocity =
         driveAngleFilter.calculate(
-            driveAngle.minus(lastDriveAngle).getRadians() / Constants.loopPeriodSecs);
+            driveAngle.minus(lastDriveAngle).getRadians() / loopPeriodSecs);
     lastDriveAngle = driveAngle;
 
     // Check if inside a box of bad
@@ -421,7 +423,7 @@ public class LaunchCalculator {
   public static Pose2d getStationaryAimedPose(Translation2d robotTranslation, boolean forceBlue) {
     // Calculate target
     boolean passing =
-        !Constants.disableHAL && LaunchCalculator.getInstance().getParameters().passing();
+        LaunchCalculator.getInstance().getParameters().passing();
 
     Translation2d target =
         passing ? getPassingTarget() : FieldConstants.Hub.topCenterPoint.toTranslation2d();

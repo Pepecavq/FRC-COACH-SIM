@@ -14,6 +14,7 @@ import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StructPublisher;
+import org.littletonrobotics.frc2026.Mock.RobotState;
 import edu.wpi.first.units.BaseUnits;
 import edu.wpi.first.units.Units;
 import edu.wpi.first.units.measure.Time;
@@ -65,6 +66,7 @@ public class Drive extends SubsystemBase {
 	@Override
 	public void periodic() {
 		lastReadState = drivetrain.getState();
+		RobotState.getInstance().setRobotSetpointVelocity(lastReadState.Speeds);
 		outputTelemetry();
 	}
 
@@ -208,7 +210,7 @@ public class Drive extends SubsystemBase {
 	}
 
 	public Command followSwerveRequestCommand(
-			SwerveRequest.FieldCentric request, UnaryOperator<SwerveRequest.FieldCentric> updater) {
+			SwerveRequest request, UnaryOperator<SwerveRequest> updater) {
 		return run(() -> setSwerveRequest(updater.apply(request)))
 				.handleInterrupt(() -> setSwerveRequest(new SwerveRequest.FieldCentric()));
 	}

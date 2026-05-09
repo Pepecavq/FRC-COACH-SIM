@@ -23,7 +23,9 @@ import frc.lib.util.SynchronousPIDF;
 import frc.lib.util.Util;
 import frc.robot.RobotConstants;
 import frc.robot.controlboard.ControlBoardConstants;
+import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
+import lombok.Setter;
 
 public class DriveConstants {
 	public static final LinearVelocity kMaxSpeed = GeneratedConstants.kSpeedAt12Volts;
@@ -37,6 +39,27 @@ public class DriveConstants {
 
 	public static final LinearVelocity kMaxSpeedTippy = kMaxSpeed.div(2.0);
 	public static final LinearVelocity kMaxSpeedVeryTippy = kMaxSpeed.div(2.9);
+
+	public static final LinearVelocity kMaxSpeedSLOW = kMaxSpeed.times(0.15);
+
+	// Point-to-point aiming for shoot-while-move
+	@Setter
+	public static boolean pointToPointActive = false;
+	public static Supplier<Rotation2d> supplierDirection = null;
+
+	public static void setSupplierDirection(Supplier<Rotation2d> supplier) {
+		supplierDirection = supplier;
+	}
+
+	public static boolean inTolerance() {
+		if (supplierDirection == null) return false;
+		boolean epsilon = Util.epsilonEquals(
+				Drive.mInstance.getHeading(),
+				supplierDirection.get(),
+				Units.Degrees.of(4.0));
+		SmartDashboard.putBoolean("inTolerance/Epsilon", epsilon);
+		return epsilon;
+	}
 
 	public static final LinearVelocity kChoreoMaxSpeed = kMaxSpeed.times(0.85);
 	public static final LinearAcceleration kChoreoMaxAcceleration = kMaxAcceleration.times(0.7);
@@ -121,8 +144,16 @@ public class DriveConstants {
 	public static final SwerveRequest.FieldCentric teleopRequest =
 			new SwerveRequest.FieldCentric().withDriveRequestType(DriveRequestType.OpenLoopVoltage);
 
-	public static final UnaryOperator<SwerveRequest.FieldCentric> teleopRequestUpdater =
-			(SwerveRequest.FieldCentric request) -> {
+	public static final SwerveRequest.FieldCentricFacingAngle teleopRequestFacingAngle =
+			new SwerveRequest.FieldCentricFacingAngle().withDriveRequestType(DriveRequestType.OpenLoopVoltage);
+
+	static {
+		teleopRequestFacingAngle.HeadingController.setPID(6.95, 0, 0.123);
+		teleopRequestFacingAngle.HeadingController.enableContinuousInput(-Math.PI, Math.PI);
+	}
+
+	public static final UnaryOperator<SwerveRequest> teleopRequestUpdater =
+			(SwerveRequest request) -> {
 				double xDesiredRaw = -ControlBoardConstants.mDriverController.getLeftY();
 				double yDesiredRaw = -ControlBoardConstants.mDriverController.getLeftX();
 				double rotDesiredRaw = -ControlBoardConstants.mDriverController.getRightX();
@@ -132,18 +163,38 @@ public class DriveConstants {
 
 				SmartDashboard.putNumber("Sticks/hypot/raw", Math.hypot(xDesiredRaw, yDesiredRaw));
 
-				return request.withVelocityX((ControlBoardConstants.mDriverController
-												.leftStick()
-												.getAsBoolean()
-										? DriveConstants.kMaxSpeedFAST
-										: DriveConstants.kMaxSpeed)
-								.times(xFancy))
-						.withVelocityY((ControlBoardConstants.mDriverController
-												.leftStick()
-												.getAsBoolean()
-										? DriveConstants.kMaxSpeedFAST
-										: DriveConstants.kMaxSpeed)
-								.times(yFancy))
+				LinearVelocity maxSpeed = pointToPointActive
+						? kMaxSpeedSLOW
+						: (ControlBoardConstants.mDriverController.leftStick().getAsBoolean()
+								? kMaxSpeedFAST
+								: kMaxSpeed);
+
+				// Flip translation for red alliance
+				double finalX = xFancy;
+				double finalY = yFancy;
+				if (RobotConstants.isRedAlliance) {
+					finalX = -finalX;
+					finalY = -finalY;
+				}
+
+				// Point-to-point aiming: override rotation with auto-aim
+				if (pointToPointActive && supplierDirection != null) {
+					Rotation2d targetDirection = supplierDirection.get();
+
+					// Brake if at target and joysticks untouched
+					boolean joysticksUntouched = Math.abs(xFancy) == 0.0 && Math.abs(yFancy) == 0.0 && Math.abs(rotFancy) == 0.0;
+					if (inTolerance() && joysticksUntouched) {
+						return new SwerveRequest.SwerveDriveBrake();
+					}
+
+					return teleopRequestFacingAngle
+							.withVelocityX(maxSpeed.times(finalX))
+							.withVelocityY(maxSpeed.times(finalY))
+							.withTargetDirection(targetDirection);
+				}
+
+				return teleopRequest.withVelocityX(maxSpeed.times(xFancy))
+						.withVelocityY(maxSpeed.times(yFancy))
 						.withRotationalRate((ControlBoardConstants.mDriverController
 												.rightStick()
 												.getAsBoolean()

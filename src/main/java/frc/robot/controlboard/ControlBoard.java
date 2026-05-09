@@ -15,6 +15,7 @@ import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
 import frc.lib.util.FieldLayout.Level;
+import frc.robot.commands.AutoalignThenShootCommand;
 import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.drive.DriveConstants;
 import frc.robot.subsystems.elevator.Elevator;
@@ -51,9 +52,9 @@ public class ControlBoard extends SubsystemBase {
 	public void driverControls() {
 		Superstructure s = Superstructure.mInstance;
 
-		// INTAKING ###############################################################################
-
-	
+		// SHOOT WHILE MOVE (right trigger) ######################################################
+		driver.rightTrigger(0.1).whileTrue(
+				new AutoalignThenShootCommand(s.hubSupplier));
 	}
 
 
