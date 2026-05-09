@@ -1,7 +1,7 @@
 package frc.lib.sim;
 
 import edu.wpi.first.units.Measure;
-import edu.wpi.first.units.measure.Unit;
+import edu.wpi.first.units.Unit;
 import edu.wpi.first.units.Units;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularVelocity;
@@ -24,7 +24,7 @@ public abstract class MechanismSim {
 	 * @return Rotor units.
 	 */
 	@SuppressWarnings("unchecked")
-	public <T extends U, U extends Unit> T mechanismToRotor(T mechanism) {
+	public <T extends Measure<U>, U extends Unit> T mechanismToRotor(T mechanism) {
 		return (T) mechanism.times(gearing);
 	}
 

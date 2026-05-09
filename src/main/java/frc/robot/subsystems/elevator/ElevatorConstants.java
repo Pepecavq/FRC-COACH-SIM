@@ -115,7 +115,6 @@ public class ElevatorConstants {
 				.withSoftwareLimitSwitch(new SoftwareLimitSwitchConfigs()
 						.withForwardSoftLimitEnable(false)
 						.withReverseSoftLimitEnable(false));
-		IOConfig.followerOpposeMain = new boolean[] {false};
 		IOConfig.followerBuses = new String[] {Ports.ELEVATOR_FOLLOWER.bus};
 		IOConfig.followerIDs = new int[] {Ports.ELEVATOR_FOLLOWER.id};
 		return IOConfig;

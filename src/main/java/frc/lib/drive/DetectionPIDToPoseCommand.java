@@ -118,7 +118,6 @@ public class DetectionPIDToPoseCommand extends PIDToPoseCommand {
 	@Override
 	public boolean isFinished() {
 		return super.isFinished()
-				|| Superstructure.indexerBreak.getDebouncedIfReal()
 				|| timer.getTime().gte(Units.Seconds.of(3.5));
 	}
 }

@@ -24,6 +24,10 @@ import frc.lib.util.Util;
 import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.drive.DriveConstants;
 import frc.robot.subsystems.superstructure.SuperstructureConstants;
+
+import static edu.wpi.first.units.Units.Degrees;
+import static edu.wpi.first.units.Units.Seconds;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -111,42 +115,6 @@ public class FollowTrajectoryCommand extends Command {
 						.getRotation(),
 				translationController,
 				headingController);
-	}
-
-	public FollowTrajectoryCommand(
-			Trajectory trajectory,
-			Level level,
-			SynchronousPIDF translationController,
-			SynchronousPIDF headingController) {
-		this(
-				trajectory,
-				SuperstructureConstants.getAutoAlignScoringDistanceEpsilon(level),
-				SuperstructureConstants.getAutoAlignScoringAngleEpsilon(level),
-				SuperstructureConstants.getAutoAlignScoringDelay(level),
-				SuperstructureConstants.getAutoAlignLookaheadTime(level),
-				trajectory
-						.getStates()
-						.get(trajectory.getStates().size() - 1)
-						.poseMeters
-						.getRotation(),
-				translationController,
-				headingController);
-	}
-
-	public FollowTrajectoryCommand(Trajectory trajectory, Level level) {
-		this(
-				trajectory,
-				SuperstructureConstants.getAutoAlignScoringDistanceEpsilon(level),
-				SuperstructureConstants.getAutoAlignScoringAngleEpsilon(level),
-				SuperstructureConstants.getAutoAlignScoringDelay(level),
-				SuperstructureConstants.getAutoAlignLookaheadTime(level),
-				trajectory
-						.getStates()
-						.get(trajectory.getStates().size() - 1)
-						.poseMeters
-						.getRotation(),
-				DriveConstants.mAutoAlignTranslationController,
-				DriveConstants.mAutoAlignHeadingController);
 	}
 
 	public FollowTrajectoryCommand(

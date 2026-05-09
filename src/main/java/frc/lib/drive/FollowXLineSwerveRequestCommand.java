@@ -1,5 +1,9 @@
 package frc.lib.drive;
 
+import static edu.wpi.first.units.Units.Degrees;
+import static edu.wpi.first.units.Units.Meters;
+import static edu.wpi.first.units.Units.Seconds;
+
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -29,8 +33,8 @@ public class FollowXLineSwerveRequestCommand extends Command {
 	Rotation2d targetRotation = new Rotation2d();
 	LinearVelocity speedDesired = Units.MetersPerSecond.of(0.0);
 	DelayedBoolean atTarget;
-	Distance epsilonDist = SuperstructureConstants.getAutoAlignScoringDistanceEpsilon(Level.NET);
-	Angle epsilonAngle = SuperstructureConstants.getAutoAlignScoringAngleEpsilon(Level.NET);
+	Distance epsilonDist = Meters.of(0.2);
+	Angle epsilonAngle = Degrees.of(5);
 
 	/**
 	 * No parameters in current implementation; hard-coded to target the net
@@ -39,7 +43,7 @@ public class FollowXLineSwerveRequestCommand extends Command {
 		addRequirements(Drive.mInstance);
 		atTarget = new DelayedBoolean(
 				Timer.getFPGATimestamp(),
-				SuperstructureConstants.getAutoAlignScoringDelay(Level.NET).in(Units.Seconds));
+				Seconds.of(0.1).in(Seconds));
 	}
 
 	public boolean driveDone() {

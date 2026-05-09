@@ -31,20 +31,9 @@ import frc.lib.util.Stopwatch;
 import frc.robot.autos.AutoHelpers;
 import frc.robot.autos.AutoModeSelector;
 import frc.robot.controlboard.ControlBoard;
-import frc.robot.subsystems.LEDs.LEDs;
-import frc.robot.subsystems.algaedeploy.AlgaeDeploy;
-import frc.robot.subsystems.algaerollers.AlgaeRollers;
-import frc.robot.subsystems.brakecoast.BrakeCoastButton;
-import frc.robot.subsystems.climber.Climber;
-import frc.robot.subsystems.climberrollers.ClimberRollers;
-import frc.robot.subsystems.coraldeploy.CoralDeploy;
-import frc.robot.subsystems.coraldeploy.CoralDeployConstants;
-import frc.robot.subsystems.coralindexer.CoralIndexer;
-import frc.robot.subsystems.coralrollers.CoralRollers;
 import frc.robot.subsystems.detection.Detection;
 import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.elevator.Elevator;
-import frc.robot.subsystems.endeffector.EndEffector;
 import frc.robot.subsystems.pivot.Pivot;
 import frc.robot.subsystems.superstructure.Superstructure;
 import frc.robot.subsystems.vision.Limelight;
@@ -59,7 +48,6 @@ public class Robot extends TimedRobot {
 	private GcStatsCollector mGcStatsCollector = new GcStatsCollector();
 
 	private static String mPreviousAutoName;
-	private static BrakeCoastButton mButton = new BrakeCoastButton();
 	private static String kSerial;
 	private Stopwatch buttonWait = new Stopwatch();
 
@@ -109,18 +97,8 @@ public class Robot extends TimedRobot {
 		ControlBoard.mInstance.configureBindings();
 
 		for (SubsystemBase s : new SubsystemBase[] {
-			AlgaeDeploy.mInstance,
-			AlgaeRollers.mInstance,
-			Climber.mInstance,
-			ClimberRollers.mInstance,
-			CoralDeploy.mInstance,
-			CoralIndexer.mInstance,
-			CoralRollers.mInstance,
 			Drive.mInstance,
-			Detection.mInstance,
 			Elevator.mInstance,
-			EndEffector.mInstance,
-			LEDs.mInstance,
 			Limelight.mInstance,
 			Pivot.mInstance,
 			Superstructure.mInstance
@@ -130,7 +108,6 @@ public class Robot extends TimedRobot {
 
 		SmartDashboard.putData("Auto Mode Selector", mAutoModeSelector.getAutoChooser());
 		SmartDashboard.putData("Command Scheduler", CommandScheduler.getInstance());
-		SmartDashboard.putData(mButton);
 
 		RobotController.setBrownoutVoltage(Units.Volts.of(4.6));
 
@@ -188,14 +165,8 @@ public class Robot extends TimedRobot {
 							|| DriverStationSim.getAllianceStationId().equals(AllianceStationID.Red3);
 		}
 
-		if (mButton.isPressed() && buttonWait.getTime().gte(Units.Seconds.of(10.0))) {
-			mButton.toggleState();
-		}
-
 		if (disabledLoopCount % 50 == 0) {
-			if (CoralDeploy.mInstance.getPosition().gte(CoralDeployConstants.kFullStowPosition)) {
-				CoralDeploy.mInstance.setCurrentPosition(CoralDeployConstants.kFullStowPosition);
-			}
+		
 		}
 	}
 
@@ -219,12 +190,6 @@ public class Robot extends TimedRobot {
 	public void autonomousExit() {
 		mAutoModeSelector.getAutoChooser().select("Nothing");
 
-		EndEffector.mInstance.applySetpoint(Setpoint.withNeutralSetpoint());
-
-		CoralRollers.mInstance.applySetpoint(CoralRollers.IDLE);
-		CoralIndexer.mInstance.applySetpoint(CoralIndexer.IDLE);
-		AlgaeRollers.mInstance.applySetpoint(AlgaeRollers.IDLE);
-
 		autoTimer.reset();
 	}
 
@@ -237,9 +202,8 @@ public class Robot extends TimedRobot {
 		CommandScheduler.getInstance().clearComposedCommands();
 
 		Drive.mInstance.setSwerveRequest(new SwerveRequest.ApplyFieldSpeeds());
-		Climber.mInstance.applySetpoint(Climber.CLEAR);
 
-		Detection.mInstance.setPipeline(DetectionMode.TELE.index);
+		Detection.mInstance.setPipeline(DetectionMode.AUTO.index);
 	}
 
 	@Override

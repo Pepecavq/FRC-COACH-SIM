@@ -107,21 +107,6 @@ public class PIDToPoseCommand extends Command {
 		this(finalPose, delayTime, finalPose.getRotation(), translationController, headingController);
 	}
 
-	/**
-	 * Boolean param was added to avoid confusion with the constructor that would transform a scoring pose from a branch.
-	 * For example, this is used for our auto align to L1.
-	 */
-	public PIDToPoseCommand(Pose2d rawEndPose, Level level, boolean useRaw) {
-		this(
-				rawEndPose.transformBy(new Transform2d(new Translation2d(), Rotation2d.k180deg)),
-				SuperstructureConstants.getAutoAlignScoringDistanceEpsilon(level),
-				SuperstructureConstants.getAutoAlignScoringAngleEpsilon(level),
-				SuperstructureConstants.getAutoAlignScoringDelay(level),
-				rawEndPose.getRotation(),
-				DriveConstants.mAutoAlignTranslationController,
-				DriveConstants.mAutoAlignHeadingController);
-	}
-
 	public PIDToPoseCommand(
 			Pose2d finalPose,
 			Distance epsilonDist,
@@ -145,33 +130,6 @@ public class PIDToPoseCommand extends Command {
 
 	public PIDToPoseCommand(Pose2d finalPose) {
 		this(finalPose, DriveConstants.mAutoAlignTranslationController, DriveConstants.mAutoAlignHeadingController);
-	}
-
-	/* AUTO ALIGN PID TO POSE COMMANDS */
-	public PIDToPoseCommand(
-			Pose2d finalPose, Level level, SynchronousPIDF translationController, SynchronousPIDF headingController) {
-		this(
-				TrajectoryHelpers.getDriveTargetPose(
-								finalPose, SuperstructureConstants.getAutoAlignHeadingGenerationDeadband(level), level)
-						.plus(new Transform2d(Translation2d.kZero, Rotation2d.k180deg)),
-				SuperstructureConstants.getAutoAlignScoringDistanceEpsilon(level),
-				SuperstructureConstants.getAutoAlignScoringAngleEpsilon(level),
-				SuperstructureConstants.getAutoAlignScoringDelay(level),
-				finalPose.getRotation(),
-				translationController,
-				headingController);
-	}
-
-	public PIDToPoseCommand(Pose2d finalPose, Level level, SynchronousPIDF translationController) {
-		this(finalPose, level, translationController, DriveConstants.mAutoAlignHeadingController);
-	}
-
-	public PIDToPoseCommand(Pose2d finalPose, Level level) {
-		this(
-				finalPose,
-				level,
-				DriveConstants.mAutoAlignTranslationController,
-				DriveConstants.mAutoAlignHeadingController);
 	}
 
 	@Override

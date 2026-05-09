@@ -28,7 +28,6 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.Subsystem;
 import frc.robot.RobotConstants;
 import frc.robot.subsystems.drive.Drive;
-import frc.robot.subsystems.shooter.Shooter;
 
 import static edu.wpi.first.units.Units.Inch;
 
