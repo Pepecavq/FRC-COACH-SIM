@@ -15,6 +15,7 @@ import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
 import frc.lib.util.FieldLayout.Level;
+import frc.robot.commands.AutoIntakeFuelCommand;
 import frc.robot.commands.AutoalignThenShootCommand;
 import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.drive.DriveConstants;
@@ -55,6 +56,9 @@ public class ControlBoard extends SubsystemBase {
 		// SHOOT WHILE MOVE (right trigger) ######################################################
 		driver.rightTrigger(0.1).whileTrue(
 				new AutoalignThenShootCommand(s.hubSupplier));
+
+		// AUTO INTAKE FUEL (left trigger) #######################################################
+		driver.leftTrigger(0.1).whileTrue(new AutoIntakeFuelCommand());
 	}
 
 

@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import org.littletonrobotics.frc2026.util.geometry.AllianceFlipUtil;
 
 /**
  * Contains information for location of field element and other useful reference points.
@@ -313,6 +314,103 @@ public class FieldConstants {
     // Relevant reference points on alliance side
     public static final Translation2d centerPoint =
         new Translation2d(0, AprilTagLayoutType.OFFICIAL.getLayout().getTagPose(29).get().getY());
+  }
+
+  /** X boundary between alliance and middle zones (alliance trench X). */
+  public static final double allianceTrenchX = LeftTrench.getX();
+
+  /** X boundary between middle and opponent zones (mirrored alliance trench X). */
+  public static final double opponentTrenchX = AllianceFlipUtil.forceApplyX(allianceTrenchX);
+
+  /**
+   * 6 field zones, each individually enabled/disabled.
+   * X splits into alliance / middle / opponent (by trench X-values),
+   * Y splits into left / right (at field center Y).
+   */
+  public static class Zone {
+    private final double minX, maxX, minY, maxY;
+    private boolean enabled = true;
+
+    public Zone(double minX, double maxX, double minY, double maxY) {
+      this.minX = minX;
+      this.maxX = maxX;
+      this.minY = minY;
+      this.maxY = maxY;
+    }
+
+    public boolean contains(Translation2d translation) {
+      double x = translation.getX();
+      double y = translation.getY();
+      return x >= minX && x <= maxX && y >= minY && y <= maxY;
+    }
+
+    public boolean contains(Pose2d pose) {
+      return contains(pose.getTranslation());
+    }
+
+    public boolean isEnabled() {
+      return enabled;
+    }
+
+    public void setEnabled(boolean enabled) {
+      this.enabled = enabled;
+    }
+
+    public boolean containsAndEnabled(Pose2d pose) {
+      return enabled && contains(pose);
+    }
+  }
+
+  public static final Zone ALLIANCE_LEFT =
+      new Zone(0, allianceTrenchX, fieldWidth / 2.0, fieldWidth);
+  public static final Zone ALLIANCE_RIGHT =
+      new Zone(0, allianceTrenchX, 0, fieldWidth / 2.0);
+  public static final Zone MIDDLE_LEFT =
+      new Zone(allianceTrenchX, opponentTrenchX, fieldWidth / 2.0, fieldWidth);
+  public static final Zone MIDDLE_RIGHT =
+      new Zone(allianceTrenchX, opponentTrenchX, 0, fieldWidth / 2.0);
+  public static final Zone OPPONENT_LEFT =
+      new Zone(opponentTrenchX, fieldLength, fieldWidth / 2.0, fieldWidth);
+  public static final Zone OPPONENT_RIGHT =
+      new Zone(opponentTrenchX, fieldLength, 0, fieldWidth / 2.0);
+
+  public static final Zone[] ALL_ZONES = {
+      ALLIANCE_LEFT, ALLIANCE_RIGHT, MIDDLE_LEFT, MIDDLE_RIGHT, OPPONENT_LEFT, OPPONENT_RIGHT
+  };
+
+  /** Returns the zone containing the given pose, or null if none match. */
+  public static Zone getZone(Pose2d pose) {
+    for (Zone zone : ALL_ZONES) {
+      if (zone.contains(pose)) return zone;
+    }
+    return null;
+  }
+
+  /** Returns true if the translation is in any enabled zone. */
+  public static boolean isInEnabledZone(Translation2d translation) {
+    for (Zone zone : ALL_ZONES) {
+      if (zone.contains(translation) && zone.isEnabled()) return true;
+    }
+    return false;
+  }
+
+  /** Returns true if the pose is in any enabled zone. */
+  public static boolean isInEnabledZone(Pose2d pose) {
+    return isInEnabledZone(pose.getTranslation());
+  }
+
+  /** Disables all zones, then enables only the one containing the given pose. */
+  public static void enableOnlyCurrentZone(Pose2d pose) {
+    for (Zone zone : ALL_ZONES) {
+      zone.setEnabled(zone.contains(pose));
+    }
+  }
+
+  /** Re-enables all zones. */
+  public static void enableAllZones() {
+    for (Zone zone : ALL_ZONES) {
+      zone.setEnabled(true);
+    }
   }
 
   @RequiredArgsConstructor
