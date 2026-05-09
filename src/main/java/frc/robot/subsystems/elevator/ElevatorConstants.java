@@ -111,12 +111,6 @@ public class ElevatorConstants {
 		IOConfig.mainBus = Ports.ELEVATOR_MAIN.bus;
 		IOConfig.unit = converter.getDistanceUnitAsAngleUnit(Units.Inches);
 		IOConfig.time = Units.Second;
-		IOConfig.followerConfig = getFXConfig()
-				.withSoftwareLimitSwitch(new SoftwareLimitSwitchConfigs()
-						.withForwardSoftLimitEnable(false)
-						.withReverseSoftLimitEnable(false));
-		IOConfig.followerBuses = new String[] {Ports.ELEVATOR_FOLLOWER.bus};
-		IOConfig.followerIDs = new int[] {Ports.ELEVATOR_FOLLOWER.id};
 		return IOConfig;
 	}
 
