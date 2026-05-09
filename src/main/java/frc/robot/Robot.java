@@ -33,7 +33,7 @@ import frc.robot.autos.AutoModeSelector;
 import frc.robot.controlboard.ControlBoard;
 import frc.robot.subsystems.detection.Detection;
 import frc.robot.subsystems.drive.Drive;
-import frc.robot.subsystems.elevator.Elevator;
+import frc.robot.subsystems.intake.Intake;
 import frc.robot.subsystems.pivot.Pivot;
 import frc.robot.subsystems.superstructure.Superstructure;
 import frc.robot.subsystems.vision.Limelight;
@@ -108,7 +108,7 @@ public class Robot extends TimedRobot {
 
 		for (SubsystemBase s : new SubsystemBase[] {
 			Drive.mInstance,
-			Elevator.mInstance,
+			Intake.mInstance,
 			Limelight.mInstance,
 			Pivot.mInstance,
 			Superstructure.mInstance
@@ -158,7 +158,7 @@ public class Robot extends TimedRobot {
 		buttonWait.start();
 		Drive.mInstance.getGeneratedDrive().configNeutralMode(NeutralModeValue.Brake);
 
-		Elevator.mInstance.applySetpoint(Setpoint.withNeutralSetpoint());
+		Intake.mInstance.applySetpoint(Setpoint.withNeutralSetpoint());
 		Pivot.mInstance.applySetpoint(Setpoint.withNeutralSetpoint());
 
 		Detection.mInstance.setPipeline(DetectionMode.AUTO.index);

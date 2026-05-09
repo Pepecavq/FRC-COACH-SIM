@@ -260,4 +260,12 @@ public class Drive extends SubsystemBase {
 						.lte(DriveConstants.kScoringTranslationMaxSpeed)
 				&& Units.RadiansPerSecond.of(speeds.omegaRadiansPerSecond).lte(DriveConstants.kScoringRotationMaxSpeed);
 	}
+
+	public Rotation2d getHeading() {
+		return getState().Pose.getRotation();
+	}
+
+	public ChassisSpeeds getFieldRelativeSpeeds() {
+		return ChassisSpeeds.fromRobotRelativeSpeeds(getState().Speeds, getHeading());
+	}
 }

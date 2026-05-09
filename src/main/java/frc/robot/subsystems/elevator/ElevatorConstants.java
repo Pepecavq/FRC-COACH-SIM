@@ -107,8 +107,8 @@ public class ElevatorConstants {
 	public static MotorIOTalonFXConfig getIOConfig() {
 		MotorIOTalonFXConfig IOConfig = new MotorIOTalonFXConfig();
 		IOConfig.mainConfig = getFXConfig();
-		IOConfig.mainID = Ports.ELEVATOR_MAIN.id;
-		IOConfig.mainBus = Ports.ELEVATOR_MAIN.bus;
+		IOConfig.mainID = Ports.INTAKE_MAIN.id;
+		IOConfig.mainBus = Ports.INTAKE_MAIN.bus;
 		IOConfig.unit = converter.getDistanceUnitAsAngleUnit(Units.Inches);
 		IOConfig.time = Units.Second;
 		return IOConfig;
