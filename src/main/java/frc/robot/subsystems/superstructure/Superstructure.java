@@ -45,6 +45,11 @@ public class Superstructure extends SubsystemBase {
 			AllianceFlipUtil.forceApply(FieldConstants.RightTrench)
 	};
 
+	public static final Translation2d[] ALLIANCE_TRENCH_CENTERS = {
+			FieldConstants.RightTrench,
+			FieldConstants.LeftTrench
+	};
+
 	private boolean driveReady = false;
 	private boolean superstructureDone = false;
 
@@ -102,18 +107,22 @@ public class Superstructure extends SubsystemBase {
 	}
 
 	public Command autoPassTrench() {
+		return autoPassTrench(TRENCH_CENTERS);
+	}
+
+	public Command autoPassTrench(Translation2d[] trenchCenters) {
 		return new DeferredCommand(
 				() -> {
 					Pose2d pose = Drive.mInstance.getPose();
 
 					// Find the closest trench center
-					Translation2d closestCenter = TRENCH_CENTERS[0];
+					Translation2d closestCenter = trenchCenters[0];
 					double minDistanceSq = Util.getDistanceSq(pose.getTranslation(), closestCenter);
-					for (int i = 1; i < TRENCH_CENTERS.length; i++) {
-						double distanceSq = Util.getDistanceSq(pose.getTranslation(), TRENCH_CENTERS[i]);
+					for (int i = 1; i < trenchCenters.length; i++) {
+						double distanceSq = Util.getDistanceSq(pose.getTranslation(), trenchCenters[i]);
 						if (distanceSq < minDistanceSq) {
 							minDistanceSq = distanceSq;
-							closestCenter = TRENCH_CENTERS[i];
+							closestCenter = trenchCenters[i];
 						}
 					}
 

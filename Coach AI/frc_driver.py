@@ -105,6 +105,21 @@ tools = [
                 ),
             ),
             types.FunctionDeclaration(
+                name="enable_only_zones",
+                description="Enable ONLY the specified zones and disable all others. Use this when the coach says to focus on specific areas. For example 'intake on the right' should enable only alliance_right and middle_right.",
+                parameters=types.Schema(
+                    type=types.Type.OBJECT,
+                    required=["zones"],
+                    properties={
+                        "zones": types.Schema(
+                            type=types.Type.ARRAY,
+                            items=types.Schema(type=types.Type.STRING),
+                            description="List of zone names to enable. All others will be disabled. Zone names: alliance_left, alliance_right, middle_left, middle_right, opponent_left, opponent_right",
+                        ),
+                    },
+                ),
+            ),
+            types.FunctionDeclaration(
                 name="set_robot_mode",
                 description="Switch the robot's primary mode between shooting, passing, intaking, and defend.",
                 parameters=types.Schema(
@@ -122,10 +137,10 @@ tools = [
     ),
 ]
 
-def create_nt_instance():
+def create_nt_instance(server="localhost"):
     """Create and start a NetworkTables client instance."""
     inst = ntcore.NetworkTableInstance.getDefault()
-    inst.setServerTeam(6647)
+    inst.setServer(server)
     inst.startClient4("CoachAI")
     return inst
 
@@ -230,6 +245,10 @@ class AudioLoop:
 
     async def poll_commands(self):
         while True:
+            # Send NT connection status to UI
+            connected = self.nt_inst.isConnected()
+            self._send_to_ui({"type": "nt_status", "connected": connected})
+
             try:
                 cmd = self.cmd_queue.get_nowait()
                 if cmd == "end_match":
@@ -415,6 +434,15 @@ class AudioLoop:
                 self._publish_action(f"mode_{mode}")
                 self._log_to_ui(f"[NT] mode -> {mode}")
                 self._send_to_ui({"type": "mode_update", "mode": mode})
+
+            elif fc.name == "enable_only_zones":
+                zones_to_enable = fc.args.get("zones", [])
+                for zone in ZONE_NAMES:
+                    enabled = zone in zones_to_enable
+                    self.nt_zones[zone].set(enabled)
+                    self._send_to_ui({"type": "zone_update", "zone": zone, "enabled": enabled})
+                self._publish_action("zones_only", ",".join(zones_to_enable))
+                self._log_to_ui(f"[NT] enabled only zones: {zones_to_enable}")
 
             error_msg = ""
             if random.random() < self.hesitation_chance:
@@ -775,6 +803,7 @@ HERRAMIENTAS DISPONIBLES:
 - defend(target_robot): Cambiar a modo defensivo contra un robot oponente.
 - set_zone_enabled(zone, enabled): Activar/desactivar una zona del campo para recoleccion. Zonas: alliance_left, alliance_right, middle_left, middle_right, opponent_left, opponent_right.
 - set_robot_mode(mode): Cambiar el modo del robot entre shooting, passing, intaking, defend.
+- enable_only_zones(zones): Activar SOLO las zonas especificadas y desactivar todas las demas. Usa esto cuando el coach dice cosas como "recoge a la derecha" (activa alliance_right y middle_right) o "solo en el centro" (activa middle_left y middle_right).
 
 TUS RASGOS DE PERSONALIDAD:
 - {traits_str}
@@ -790,6 +819,7 @@ INSTRUCCIONES:
 8. Cuando el coach te diga que desactives o actives una zona, usa set_zone_enabled.
 9. Cuando el coach te diga que cambies entre disparar, pasar, recoger, o defender, usa set_robot_mode.
 10. En modo defend, el robot se mueve a posiciones aleatorias dentro de las zonas activas para bloquear oponentes.
+11. Cuando el coach diga algo como "recoge a la derecha", "intake on the right", "solo en la izquierda", usa enable_only_zones para activar solo las zonas relevantes. Por ejemplo: "a la derecha" = ["alliance_right", "middle_right", "opponent_right"], "en el centro" = ["middle_left", "middle_right"].
 """
         self.build_dashboard(base_persona, hes_prob, over_prob)
 
@@ -806,6 +836,9 @@ INSTRUCCIONES:
         self.timer_label = ttk.Label(top_frame, text="02:30", style='Title.TLabel', foreground="#A6E3A1")
         self.timer_label.pack(side=tk.LEFT, padx=20)
 
+        self.nt_status_label = ttk.Label(top_frame, text="NT: Disconnected", foreground="#F38BA8")
+        self.nt_status_label.pack(side=tk.RIGHT, padx=(10, 0))
+
         ttk.Button(top_frame, text="Terminar Partida", command=self.end_match, style='Small.TButton').pack(side=tk.RIGHT)
 
         stats_frame = ttk.Frame(self.dashboard_frame)
@@ -813,12 +846,19 @@ INSTRUCCIONES:
         ttk.Label(stats_frame, text=f"Hesitation: {hes_prob*100:.0f}%", foreground="#F9E2AF").pack(side=tk.LEFT, padx=10)
         ttk.Label(stats_frame, text=f"Oversteer: {over_prob*100:.0f}%", foreground="#F38BA8").pack(side=tk.LEFT, padx=10)
 
-        # ---- Controls area (zones, mode, mute) ----
-        controls_frame = ttk.Frame(self.dashboard_frame)
-        controls_frame.pack(fill=tk.X, pady=5)
+        # ---- Debug controls (hidden by default) ----
+        self.debug_visible = False
+        self.debug_toggle_btn = ttk.Button(
+            self.dashboard_frame, text="Show Debug Controls",
+            command=self._toggle_debug, style='Small.TButton'
+        )
+        self.debug_toggle_btn.pack(anchor=tk.W, pady=2)
+
+        self.controls_frame = ttk.Frame(self.dashboard_frame)
+        # Don't pack yet - hidden by default
 
         # -- Zone controls --
-        zone_frame = ttk.LabelFrame(controls_frame, text="Zone Control", padding=5)
+        zone_frame = ttk.LabelFrame(self.controls_frame, text="Zone Control", padding=5)
         zone_frame.pack(side=tk.LEFT, fill=tk.Y, padx=(0, 10))
 
         zone_labels = {
@@ -839,7 +879,7 @@ INSTRUCCIONES:
             cb.pack(anchor=tk.W, pady=1)
 
         # -- Mode controls --
-        mode_frame = ttk.LabelFrame(controls_frame, text="Robot Mode", padding=5)
+        mode_frame = ttk.LabelFrame(self.controls_frame, text="Robot Mode", padding=5)
         mode_frame.pack(side=tk.LEFT, fill=tk.Y, padx=(0, 10))
 
         self.mode_buttons = {}
@@ -853,7 +893,7 @@ INSTRUCCIONES:
             self.mode_buttons[mode] = btn
 
         # -- Mute / Text controls --
-        comm_frame = ttk.LabelFrame(controls_frame, text="Communication", padding=5)
+        comm_frame = ttk.LabelFrame(self.controls_frame, text="Communication", padding=5)
         comm_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
         self.mute_btn = ttk.Button(comm_frame, text="Mute Mic", command=self._toggle_mute, style='Mute.TButton')
@@ -871,7 +911,8 @@ INSTRUCCIONES:
         ttk.Button(text_input_frame, text="Send", command=self._on_text_send, style='Small.TButton').pack(side=tk.RIGHT)
 
         # ---- Log area ----
-        ttk.Label(self.dashboard_frame, text="Live Action Log:").pack(anchor=tk.W, pady=(5, 2))
+        self.log_label = ttk.Label(self.dashboard_frame, text="Live Action Log:")
+        self.log_label.pack(anchor=tk.W, pady=(5, 2))
 
         self.log_text = scrolledtext.ScrolledText(self.dashboard_frame, bg="#11111B", fg="#A6E3A1", font=("Consolas", 10), height=16)
         self.log_text.pack(fill=tk.BOTH, expand=True)
@@ -886,6 +927,15 @@ INSTRUCCIONES:
         ).start()
 
         self.root.after(100, self.process_queue)
+
+    def _toggle_debug(self):
+        self.debug_visible = not self.debug_visible
+        if self.debug_visible:
+            self.controls_frame.pack(fill=tk.X, pady=5, before=self.log_label)
+            self.debug_toggle_btn.configure(text="Hide Debug Controls")
+        else:
+            self.controls_frame.pack_forget()
+            self.debug_toggle_btn.configure(text="Show Debug Controls")
 
     def _on_zone_toggle(self, zone, var):
         enabled = var.get()
@@ -933,6 +983,11 @@ INSTRUCCIONES:
                     self._log(msg["message"])
                 elif msg["type"] == "timer":
                     self.timer_label.config(text=msg['time'])
+                elif msg["type"] == "nt_status":
+                    if msg["connected"]:
+                        self.nt_status_label.config(text="NT: Connected", foreground="#A6E3A1")
+                    else:
+                        self.nt_status_label.config(text="NT: Disconnected", foreground="#F38BA8")
                 elif msg["type"] == "zone_update":
                     zone = msg["zone"]
                     enabled = msg["enabled"]
